@@ -24,13 +24,11 @@ namespace HanoiTowerSolver
             towers.Clear();
             moves.Clear();
 
-            // Создаем 3 башни
             for (int i = 0; i < 3; i++)
             {
                 towers.Add(new List<int>());
             }
 
-            // Заполняем первую башню дисками (большие внизу)
             for (int i = diskCount; i >= 1; i--)
             {
                 towers[0].Add(i);
@@ -39,7 +37,6 @@ namespace HanoiTowerSolver
             StateChanged?.Invoke(GetCurrentState());
         }
 
-        // Метод для генерации решения (без выполнения ходов)
         public List<string> GenerateSolution()
         {
             moves.Clear();
@@ -47,32 +44,25 @@ namespace HanoiTowerSolver
             return new List<string>(moves);
         }
 
-        // ✅ РЕКУРСИВНЫЙ алгоритм генерации ходов (без выполнения)
         private void GenerateMoves(int n, int from, int to, int usingRod)
         {
             if (n <= 0) return;
 
-            // Рекурсивно генерируем ходы для n-1 дисков
             GenerateMoves(n - 1, from, usingRod, to);
 
-            // Добавляем ход в список (без выполнения)
             string move = $"Переместить диск {n} с {RodName(from)} на {RodName(to)}";
             moves.Add(move);
 
-            // Рекурсивно генерируем ходы для n-1 дисков
             GenerateMoves(n - 1, usingRod, to, from);
         }
 
-        // Метод для выполнения конкретного хода
         public void ExecuteMove(string move)
         {
-            // Парсим ход: "Переместить диск X с A на B"
             var parts = move.Split(' ');
             int disk = int.Parse(parts[2]);
             int from = RodIndex(parts[4]);
             int to = RodIndex(parts[6]);
 
-            // Выполняем перемещение
             if (towers[from].Count > 0 && towers[from][towers[from].Count - 1] == disk)
             {
                 towers[from].RemoveAt(towers[from].Count - 1);
@@ -107,7 +97,6 @@ namespace HanoiTowerSolver
 
         public List<List<int>> GetCurrentState()
         {
-            // Возвращаем копию для безопасности
             var copy = new List<List<int>>();
             foreach (var tower in towers)
             {
