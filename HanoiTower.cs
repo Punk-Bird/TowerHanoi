@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace HanoiTowerSolver
 {
@@ -9,8 +10,11 @@ namespace HanoiTowerSolver
         private List<string> moves;
         public int DiskCount { get; private set; }
 
+        // События для анимации
         public event Action<string> MoveMade;
         public event Action<List<List<int>>> StateChanged;
+        public event Action<int, int, int> DiskMoveStarted; // Начало анимации
+        public event Action DiskMoveCompleted; // Завершение анимации
 
         public HanoiTower()
         {
@@ -56,6 +60,35 @@ namespace HanoiTowerSolver
             GenerateMoves(n - 1, usingRod, to, from);
         }
 
+        // Асинхронный метод для анимированного выполнения хода
+        public async Task ExecuteMoveWithAnimation(string move, int animationDelay = 800)
+        {
+            var parts = move.Split(' ');
+            int disk = int.Parse(parts[2]);
+            int from = RodIndex(parts[4]);
+            int to = RodIndex(parts[6]);
+
+            if (towers[from].Count > 0 && towers[from][towers[from].Count - 1] == disk)
+            {
+                // Сообщаем о начале анимации
+                DiskMoveStarted?.Invoke(disk, from, to);
+
+                // Ждем завершения анимации
+                await Task.Delay(animationDelay);
+
+                // Выполняем фактическое перемещение
+                towers[from].RemoveAt(towers[from].Count - 1);
+                towers[to].Add(disk);
+
+                // Сообщаем о завершении анимации
+                DiskMoveCompleted?.Invoke();
+
+                MoveMade?.Invoke(move);
+                StateChanged?.Invoke(GetCurrentState());
+            }
+        }
+
+        // Старый синхронный метод (для обратной совместимости)
         public void ExecuteMove(string move)
         {
             var parts = move.Split(' ');
