@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace HanoiTowerSolver
@@ -10,16 +11,21 @@ namespace HanoiTowerSolver
         private List<string> moves;
         public int DiskCount { get; private set; }
 
+        // Для измерения времени
+        private Stopwatch stopwatch;
+        public long LastSolutionTimeMs { get; private set; }
+
         // События для анимации
         public event Action<string> MoveMade;
         public event Action<List<List<int>>> StateChanged;
-        public event Action<int, int, int> DiskMoveStarted; // Начало анимации
-        public event Action DiskMoveCompleted; // Завершение анимации
+        public event Action<int, int, int> DiskMoveStarted;
+        public event Action DiskMoveCompleted;
 
         public HanoiTower()
         {
             towers = new List<List<int>>();
             moves = new List<string>();
+            stopwatch = new Stopwatch();
         }
 
         public void Initialize(int diskCount)
@@ -44,8 +50,20 @@ namespace HanoiTowerSolver
         public List<string> GenerateSolution()
         {
             moves.Clear();
+            stopwatch.Restart();
             GenerateMoves(DiskCount, 0, 2, 1);
+            stopwatch.Stop();
+            LastSolutionTimeMs = stopwatch.ElapsedMilliseconds;
             return new List<string>(moves);
+        }
+
+        // Метод для быстрого измерения времени без генерации ходов
+        public long MeasureSolutionTime(int diskCount)
+        {
+            stopwatch.Restart();
+            CountMoves(diskCount, 0, 2, 1);
+            stopwatch.Stop();
+            return stopwatch.ElapsedMilliseconds;
         }
 
         private void GenerateMoves(int n, int from, int to, int usingRod)
@@ -60,6 +78,15 @@ namespace HanoiTowerSolver
             GenerateMoves(n - 1, usingRod, to, from);
         }
 
+        // Вспомогательный метод только для подсчета ходов и времени
+        private void CountMoves(int n, int from, int to, int usingRod)
+        {
+            if (n <= 0) return;
+
+            CountMoves(n - 1, from, usingRod, to);
+            CountMoves(n - 1, usingRod, to, from);
+        }
+
         // Асинхронный метод для анимированного выполнения хода
         public async Task ExecuteMoveWithAnimation(string move, int animationDelay = 800)
         {
@@ -70,19 +97,13 @@ namespace HanoiTowerSolver
 
             if (towers[from].Count > 0 && towers[from][towers[from].Count - 1] == disk)
             {
-                // Сообщаем о начале анимации
                 DiskMoveStarted?.Invoke(disk, from, to);
-
-                // Ждем завершения анимации
                 await Task.Delay(animationDelay);
 
-                // Выполняем фактическое перемещение
                 towers[from].RemoveAt(towers[from].Count - 1);
                 towers[to].Add(disk);
 
-                // Сообщаем о завершении анимации
                 DiskMoveCompleted?.Invoke();
-
                 MoveMade?.Invoke(move);
                 StateChanged?.Invoke(GetCurrentState());
             }
